@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TYPEMASTER — Treine sua Datilografia</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --green: #00ff88;
+    --green-dim: #00aa55;
+    --green-dark: #003322;
+    --green-glow: rgba(0,255,136,0.15);
+    --bg: #030d07;
+    --surface: #060f08;
+    --border: #00ff8822;
+    --text: #b0ffcc;
+    --danger: #ff4444;
+    --warn: #ffcc00;
+    --correct: #00ff88;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,255,136,0.018) 2px,
+        rgba(0,255,136,0.018) 4px
+      );
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 50%, rgba(0,255,136,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 9;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 860px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(24px, 5vw, 42px);
+    font-weight: 900;
+    color: var(--green);
+    letter-spacing: 0.15em;
+    text-shadow:
+      0 0 8px var(--green),
+      0 0 20px rgba(0,255,136,0.4),
+      0 0 40px rgba(0,255,136,0.2);
+    animation: flicker 6s infinite;
+  }
+
+  .tagline {
+    font-size: 12px;
+    color: var(--green-dim);
+    letter-spacing: 0.4em;
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+
+  @keyframes flicker {
+    0%,100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.8; }
+    94% { opacity: 1; }
+    97% { opacity: 0.9; }
+    98% { opacity: 1; }
+  }
+
+  /* Stats bar */
+  .stats {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-box {
+    flex: 1;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 12px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+  }
+
+  .stat-label {
+    font-size: 9px;
+    color: var(--green-dim);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(18px, 3vw, 26px);
+    color: var(--green);
+    text-shadow: 0 0 8px rgba(0,255,136,0.5);
+    font-weight: 700;
+  }
+
+  .stat-unit {
+    font-size: 10px;
+    color: var(--green-dim);
+    margin-left: 3px;
+  }
+
+  /* Timer bar */
+  .timer-track {
+    height: 3px;
+    background: var(--green-dark);
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .timer-fill {
+    height: 100%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    width: 100%;
+    transition: width 1s linear;
+    transform-origin: left;
+  }
+
+  .timer-fill.danger { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+  .timer-fill.warn   { background: var(--warn);   box-shadow: 0 0 6px var(--warn); }
+
+  /* Text display */
+  .text-display {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 28px 32px;
+    font-size: clamp(15px, 2.5vw, 20px);
+    line-height: 2;
+    letter-spacing: 0.04em;
+    position: relative;
+    margin-bottom: 20px;
+    min-height: 120px;
+  }
+
+  .text-display::before {
+    content: '> INPUT';
+    position: absolute;
+    top: -10px; left: 16px;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--green-dim);
+    background: var(--bg);
+    padding: 0 8px;
+  }
+
+  .char {
+    position: relative;
+    transition: color 0.05s;
+  }
+
+  .char.pending  { color: #4a7a5a; }
+  .char.correct  { color: var(--correct); text-shadow: 0 0 4px rgba(0,255,136,0.3); }
+  .char.wrong    { color: var(--danger); background: rgba(255,68,68,0.12); border-radius: 2px; }
+  .char.cursor   {
+    position: relative;
+  }
+  .char.cursor::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 2px;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: blink 0.8s step-end infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* Input */
+  #hidden-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px;
+    height: 1px;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .mode-group {
+    display: flex;
+    gap: 6px;
+  }
+
+  .mode-btn {
+    background: transparent;
+    border: 1px solid var(--green-dim);
+    color: var(--green-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .mode-btn:hover, .mode-btn.active {
+    background: var(--green-glow);
+    border-color: var(--green);
+    color: var(--green);
+    box-shadow: 0 0 8px rgba(0,255,136,0.2);
+  }
+
+  .btn-restart {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    padding: 10px 24px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    box-shadow: 0 0 8px rgba(0,255,136,0.1);
+  }
+
+  .btn-restart:hover {
+    background: var(--green);
+    color: var(--bg);
+    box-shadow: 0 0 16px rgba(0,255,136,0.5);
+  }
+
+  /* Result overlay */
+  .result-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(3,13,7,0.93);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  .result-overlay.show { display: flex; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn { from {opacity:0; transform:scale(0.96)} to {opacity:1; transform:scale(1)} }
+
+  .result-card {
+    border: 1px solid var(--green);
+    background: var(--surface);
+    padding: 50px 60px;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(0,255,136,0.12), inset 0 0 30px rgba(0,255,136,0.03);
+    max-width: 500px;
+    width: 90%;
+  }
+
+  .result-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    color: var(--green-dim);
+    margin-bottom: 20px;
+  }
+
+  .result-wpm {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(48px, 10vw, 72px);
+    font-weight: 900;
+    color: var(--green);
+    text-shadow: 0 0 20px rgba(0,255,136,0.6), 0 0 40px rgba(0,255,136,0.3);
+    line-height: 1;
+  }
+
+  .result-wpm-label {
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--green-dim);
+    margin-top: 6px;
+    margin-bottom: 30px;
+  }
+
+  .result-stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-bottom: 36px;
+  }
+
+  .result-stat span {
+    display: block;
+    font-size: 10px;
+    color: var(--green-dim);
+    letter-spacing: 0.3em;
+    margin-bottom: 4px;
+  }
+
+  .result-stat strong {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    color: var(--text);
+  }
+
+  .grade {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    padding: 10px 20px;
+    border: 1px solid;
+    display: inline-block;
+    margin-bottom: 30px;
+  }
+
+  .grade.S { border-color: #00ff88; color: #00ff88; box-shadow: 0 0 12px rgba(0,255,136,0.3); }
+  .grade.A { border-color: #00ddff; color: #00ddff; }
+  .grade.B { border-color: #ffcc00; color: #ffcc00; }
+  .grade.C { border-color: #ff8800; color: #ff8800; }
+  .grade.D { border-color: #ff4444; color: #ff4444; }
+
+  /* Click to focus */
+  .focus-hint {
+    position: absolute;
+    bottom: 10px; right: 16px;
+    font-size: 10px;
+    color: #2a5a3a;
+    letter-spacing: 0.2em;
+    pointer-events: none;
+  }
+
+  .text-display { cursor: text; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo">TYPEMASTER</div>
+    <div class="tagline">Terminal de Treinamento de Datilografia</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat-box">
+      <span class="stat-label">Velocidade</span>
+      <span class="stat-value" id="wpm-display">0</span><span class="stat-unit">PPM</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-label">Precisão</span>
+      <span class="stat-value" id="acc-display">100</span><span class="stat-unit">%</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-label">Erros</span>
+      <span class="stat-value" id="err-display">0</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-label">Tempo</span>
+      <span class="stat-value" id="time-display">60</span><span class="stat-unit">s</span>
+    </div>
+  </div>
+
+  <div class="timer-track">
+    <div class="timer-fill" id="timer-fill"></div>
+  </div>
+
+  <div class="text-display" id="text-display" onclick="focusInput()">
+    <div id="word-container"></div>
+    <span class="focus-hint">CLIQUE PARA FOCAR</span>
+  </div>
+
+  <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+
+  <div class="controls">
+    <div class="mode-group">
+      <button class="mode-btn active" data-time="30">30s</button>
+      <button class="mode-btn active" data-time="60" style="border-color:var(--green);color:var(--green)">60s</button>
+      <button class="mode-btn" data-time="120">120s</button>
+    </div>
+    <div class="mode-group">
+      <button class="mode-btn active" id="mode-pt" data-lang="pt">PT</button>
+      <button class="mode-btn" id="mode-en" data-lang="en">EN</button>
+    </div>
+    <button class="btn-restart" onclick="restart()">↺ REINICIAR</button>
+  </div>
+</div>
+
+<!-- Result overlay -->
+<div class="result-overlay" id="result-overlay">
+  <div class="result-card">
+    <div class="result-title">— SESSÃO ENCERRADA —</div>
+    <div class="result-wpm" id="final-wpm">0</div>
+    <div class="result-wpm-label">PALAVRAS POR MINUTO</div>
+    <div class="grade" id="final-grade">—</div>
+    <div class="result-stats">
+      <div class="result-stat">
+        <span>PRECISÃO</span>
+        <strong id="final-acc">0%</strong>
+      </div>
+      <div class="result-stat">
+        <span>ERROS</span>
+        <strong id="final-err">0</strong>
+      </div>
+      <div class="result-stat">
+        <span>CARACTERES</span>
+        <strong id="final-chars">0</strong>
+      </div>
+    </div>
+    <button class="btn-restart" onclick="closeResult()" style="font-size:13px;padding:14px 36px;">↺ TENTAR NOVAMENTE</button>
+  </div>
+</div>
+
+<script>
+const WORDS = {
+  pt: [
+    "a","o","e","de","do","da","em","um","uma","com","para","que","não","se","na","no","ao","dos","das","por","mas","foi","uma","como","mais","ou","seu","sua","isso","esta","entre","quando","muito","há","mesmo","depois","sobre","já","também","pode","anos","ela","seus","quem","nas","me","esse","eles","estão","você","tinha","foram","essa","num","nem","suas","meu","às","minha","têm","numa","pelos","elas","havia","seja","qual","será","nós","tenho","lhe","deles","essas","esses","pelas","este","fosse","dele","tem","onde","quase","isso","está","sendo","quer","ter","era","sem","vai","vez","então","antes","ainda","todo","outros","estes","quando","bem","quem","mas","ao","às",
+    "casa","rua","cidade","tempo","vida","mundo","trabalho","dia","pessoa","forma","mão","parte","lugar","água","olho","coisa","hora","caminho","povo","filho","modo","lado","mês","estado","nome","voz","escola","número","ponto","ano","homem","mulher","corpo","base","face","campo","terra","arte","força","poder","país",
+    "fazer","dizer","ir","ver","dar","ficar","falar","ter","vir","querer","saber","passar","poder","levar","deixar","conhecer","seguir","encontrar","voltar","chegar","trazer","comer","viver","sentir","abrir","ajudar","escrever","ler","correr","andar","jogar","estudar","trabalhar","pensar","olhar","ouvir","esperar","começar","continuar","criar","mostrar","aprender","lembrar","entender","precisar","conseguir","mover","usar"
+  ],
+  en: [
+    "the","be","to","of","and","a","in","that","have","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us",
+    "run","jump","write","read","type","code","build","learn","think","create","design","solve","play","move","start","stop","help","save","open","close","find","search","click","press","hold","push","pull","draw","paint","sing","dance","walk","talk","call","text","email","share","send","post","like","follow","watch","listen","feel","touch","taste","smell","see","hear","know","understand","remember","forget","believe","doubt","hope","fear","love","hate","need","want","try","fail","succeed","grow","change","improve","practice","focus","relax","breathe","smile"
+  ]
+};
+
+let currentLang = 'pt';
+let totalTime = 60;
+let timeLeft = 60;
+let timerInterval = null;
+let started = false;
+let wordList = [];
+let currentWordIndex = 0;
+let totalTyped = 0;
+let errors = 0;
+let correctChars = 0;
+
+const hiddenInput = document.getElementById('hidden-input');
+const wordContainer = document.getElementById('word-container');
+const wpmDisplay = document.getElementById('wpm-display');
+const accDisplay = document.getElementById('acc-display');
+const errDisplay = document.getElementById('err-display');
+const timeDisplay = document.getElementById('time-display');
+const timerFill = document.getElementById('timer-fill');
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generateWords(count = 120) {
+  const pool = shuffle(WORDS[currentLang]);
+  const result = [];
+  while (result.length < count) result.push(...pool);
+  return result.slice(0, count);
+}
+
+function buildDOM() {
+  wordContainer.innerHTML = '';
+  wordList.forEach((word, wi) => {
+    const span = document.createElement('span');
+    span.className = 'word';
+    span.dataset.index = wi;
+    const chars = (word + ' ').split('');
+    chars.forEach((ch, ci) => {
+      const c = document.createElement('span');
+      c.className = 'char pending';
+      c.textContent = ch;
+      c.dataset.wi = wi;
+      c.dataset.ci = ci;
+      span.appendChild(c);
+    });
+    wordContainer.appendChild(span);
+  });
+  setCursor(0, 0);
+}
+
+function setCursor(wi, ci) {
+  document.querySelectorAll('.char.cursor').forEach(el => el.classList.remove('cursor'));
+  const chars = wordContainer.querySelectorAll(`[data-wi="${wi}"]`);
+  if (chars[ci]) chars[ci].classList.add('cursor');
+}
+
+function focusInput() {
+  hiddenInput.focus();
+}
+
+let typedPerWord = [];
+
+function restart() {
+  clearInterval(timerInterval);
+  started = false;
+  timeLeft = totalTime;
+  totalTyped = 0;
+  errors = 0;
+  correctChars = 0;
+  currentWordIndex = 0;
+  typedPerWord = [];
+
+  wpmDisplay.textContent = '0';
+  accDisplay.textContent = '100';
+  errDisplay.textContent = '0';
+  timeDisplay.textContent = totalTime;
+  timerFill.style.width = '100%';
+  timerFill.className = 'timer-fill';
+
+  wordList = generateWords();
+  typedPerWord = wordList.map(() => '');
+  buildDOM();
+  document.getElementById('result-overlay').classList.remove('show');
+  hiddenInput.value = '';
+  focusInput();
+}
+
+function startTimer() {
+  started = true;
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    timeDisplay.textContent = timeLeft;
+    const pct = (timeLeft / totalTime) * 100;
+    timerFill.style.width = pct + '%';
+    if (pct <= 15) timerFill.className = 'timer-fill danger';
+    else if (pct <= 33) timerFill.className = 'timer-fill warn';
+
+    
+    const elapsed = totalTime - timeLeft;
+    if (elapsed > 0) {
+      const wpm = Math.round((correctChars / 5) / (elapsed / 60));
+      wpmDisplay.textContent = wpm;
+    }
+
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      showResult();
+    }
+  }, 1000);
+}
+
+function renderWord(wi) {
+  const typed = typedPerWord[wi] || '';
+  const word = wordList[wi];
+  const full = word + ' ';
+  const chars = wordContainer.querySelectorAll(`[data-wi="${wi}"]`);
+  chars.forEach((ch, ci) => {
+    ch.classList.remove('pending','correct','wrong','cursor');
+    if (ci < typed.length) {
+      ch.classList.add(typed[ci] === full[ci] ? 'correct' : 'wrong');
+    } else {
+      ch.classList.add('pending');
+    }
+  });
+}
+
+hiddenInput.addEventListener('input', (e) => {
+  if (!started && hiddenInput.value.length > 0) startTimer();
+  if (timeLeft <= 0) { hiddenInput.value = ''; return; }
+
+  const val = hiddenInput.value;
+
+  // Space or end of word
+  if (val.endsWith(' ') || val.length > wordList[currentWordIndex].length + 1) {
+    // commit word
+    const typed = val.trimEnd();
+    const word = wordList[currentWordIndex];
+    typedPerWord[currentWordIndex] = typed + ' ';
+
+    // count chars
+    const full = word + ' ';
+    const tFull = typed + ' ';
+    for (let i = 0; i < Math.max(full.length, tFull.length); i++) {
+      if (full[i] === tFull[i]) correctChars++;
+      else errors++;
+    }
+    totalTyped++;
+
+    errDisplay.textContent = errors;
+    const acc = totalTyped > 0 ? Math.max(0, Math.round(((totalTyped * (wordList[0].length)) - errors) / (totalTyped * (wordList[0].length)) * 100)) : 100;
+    // simpler accuracy
+    const totalC = correctChars + errors;
+    accDisplay.textContent = totalC > 0 ? Math.round((correctChars / totalC) * 100) : 100;
+
+    renderWord(currentWordIndex);
+    currentWordIndex++;
+    hiddenInput.value = '';
+    typedPerWord[currentWordIndex] = '';
+
+    // scroll if needed
+    const nextWord = wordContainer.querySelector(`[data-index="${currentWordIndex}"]`);
+    if (nextWord) nextWord.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+    setCursor(currentWordIndex, 0);
+    return;
+  }
+
+  typedPerWord[currentWordIndex] = val;
+  renderWord(currentWordIndex);
+  setCursor(currentWordIndex, val.length);
+});
+
+hiddenInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Backspace' && hiddenInput.value === '' && currentWordIndex > 0) {
+    // go back
+    currentWordIndex--;
+    hiddenInput.value = typedPerWord[currentWordIndex].trimEnd();
+    typedPerWord[currentWordIndex] = hiddenInput.value;
+    renderWord(currentWordIndex);
+    setCursor(currentWordIndex, hiddenInput.value.length);
+    e.preventDefault();
+  }
+});
+
+function showResult() {
+  const elapsed = totalTime;
+  const wpm = Math.round((correctChars / 5) / (elapsed / 60));
+  const totalC = correctChars + errors;
+  const acc = totalC > 0 ? Math.round((correctChars / totalC) * 100) : 100;
+
+  document.getElementById('final-wpm').textContent = wpm;
+  document.getElementById('final-acc').textContent = acc + '%';
+  document.getElementById('final-err').textContent = errors;
+  document.getElementById('final-chars').textContent = correctChars;
+
+  let grade, gradeClass;
+  if (wpm >= 80 && acc >= 97) { grade = '★ RANK S'; gradeClass = 'S'; }
+  else if (wpm >= 60 && acc >= 94) { grade = '▲ RANK A'; gradeClass = 'A'; }
+  else if (wpm >= 40 && acc >= 90) { grade = '◆ RANK B'; gradeClass = 'B'; }
+  else if (wpm >= 25) { grade = '● RANK C'; gradeClass = 'C'; }
+  else { grade = '○ RANK D'; gradeClass = 'D'; }
+
+  const gradeEl = document.getElementById('final-grade');
+  gradeEl.textContent = grade;
+  gradeEl.className = 'grade ' + gradeClass;
+
+  document.getElementById('result-overlay').classList.add('show');
+}
+
+function closeResult() {
+  restart();
+}
+
+// Time buttons
+document.querySelectorAll('[data-time]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-time]').forEach(b => {
+      b.style.borderColor = ''; b.style.color = ''; b.classList.remove('active');
+    });
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    btn.classList.add('active');
+    totalTime = parseInt(btn.dataset.time);
+    restart();
+  });
+});
+
+// Lang buttons
+document.querySelectorAll('[data-lang]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-lang]').forEach(b => {
+      b.style.borderColor = ''; b.style.color = ''; b.classList.remove('active');
+    });
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    btn.classList.add('active');
+    currentLang = btn.dataset.lang;
+    restart();
+  });
+});
+
+// Pre-select defaults
+document.querySelector('[data-time="60"]').style.borderColor = 'var(--green)';
+document.querySelector('[data-time="60"]').style.color = 'var(--green)';
+document.querySelector('[data-lang="pt"]').style.borderColor = 'var(--green)';
+document.querySelector('[data-lang="pt"]').style.color = 'var(--green)';
+
+restart();
+</script>
+</body>
+</html>
